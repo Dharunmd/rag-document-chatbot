@@ -1,27 +1,26 @@
 # Virtual environment
 venv/
+.venv/
 
-# API Keys - NEVER push this
-.env
-
-# Python cache
-__pycache__/
-*.pyc
-*.pyo
-
-# ChromaDB local storage
-chroma_db/
-
-# Mac system files
-.DS_Store
-
-# Jupyter checkpoints
-.ipynb_checkpoints/
-
-venv/
+# Secrets and local runtime data
 .env
 uploads/
 vector_db/
+
+# Python
 __pycache__/
 *.pyc
+*.pyo
+*.egg-info/
+.pytest_cache/
+
+# OS / editor
 .DS_Store
+.idea/
+.vscode/
+
+# Jupyter
+.ipynb_checkpoints/
+
+# Node (leftover lockfile from experiments)
+node_modules/

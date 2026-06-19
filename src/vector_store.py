@@ -1,45 +1,48 @@
-# src/vector_store.py
+import shutil
 
 from langchain_chroma import Chroma
 
+from config import VECTOR_DB_PATH
 from src.embeddings import load_embedding_model
 
-VECTOR_DB_PATH = "vector_db"
+
+def clear_vector_store():
+    """Remove the persisted Chroma index before indexing a new document."""
+
+    if VECTOR_DB_PATH.exists():
+        shutil.rmtree(VECTOR_DB_PATH)
+        print("Removed previous vector store")
 
 
 def create_vector_store(chunks):
-    """
-    Create and persist a Chroma vector database.
-    """
+    """Build and persist a Chroma collection from document chunks."""
 
-    print("🔄 Creating vector store...")
+    clear_vector_store()
+    VECTOR_DB_PATH.mkdir(parents=True, exist_ok=True)
 
     embeddings = load_embedding_model()
 
     vector_store = Chroma.from_documents(
         documents=chunks,
         embedding=embeddings,
-        persist_directory=VECTOR_DB_PATH
+        persist_directory=str(VECTOR_DB_PATH),
     )
 
-    print(
-        f"✅ Vector store created with "
-        f"{len(chunks)} chunks"
-    )
-
+    print(f"Indexed {len(chunks)} chunks into Chroma")
     return vector_store
 
 
 def load_vector_store():
-    """
-    Load an existing vector database.
-    """
+    """Load the persisted Chroma collection."""
+
+    if not VECTOR_DB_PATH.exists():
+        raise FileNotFoundError(
+            "No indexed document found. Upload and process a file first."
+        )
 
     embeddings = load_embedding_model()
 
-    vector_store = Chroma(
-        persist_directory=VECTOR_DB_PATH,
-        embedding_function=embeddings
+    return Chroma(
+        persist_directory=str(VECTOR_DB_PATH),
+        embedding_function=embeddings,
     )
-
-    return vector_store

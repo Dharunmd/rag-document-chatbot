@@ -1,167 +1,108 @@
-# src/document_loader.py
-
-import os
+from pathlib import Path
 
 from docx import Document
-
-from langchain.schema import Document as LangchainDocument
 from langchain_community.document_loaders import PyPDFLoader
-from langchain.text_splitter import RecursiveCharacterTextSplitter
+from langchain_core.documents import Document as LangchainDocument
+from langchain_text_splitters import RecursiveCharacterTextSplitter
+
+from config import CHUNK_OVERLAP, CHUNK_SIZE
 
 
 def split_documents(documents):
+    """Split loaded pages into overlapping chunks for retrieval."""
 
     text_splitter = RecursiveCharacterTextSplitter(
-        chunk_size=1000,
-        chunk_overlap=200,
+        chunk_size=CHUNK_SIZE,
+        chunk_overlap=CHUNK_OVERLAP,
         length_function=len,
-        separators=["\n\n", "\n", " ", ""]
+        separators=["\n\n", "\n", " ", ""],
     )
 
     chunks = text_splitter.split_documents(documents)
-
-    print(f"✅ Split into {len(chunks)} chunks")
-
-    if chunks:
-
-        print("\n📌 Sample chunk preview:")
-        print(
-            f"Content: "
-            f"{chunks[0].page_content[:200]}..."
-        )
-        print(
-            f"Metadata: "
-            f"{chunks[0].metadata}"
-        )
-
+    print(f"Split document into {len(chunks)} chunks")
     return chunks
 
 
 def load_and_split_pdf(file_path: str):
+    path = Path(file_path)
+    if not path.exists():
+        raise FileNotFoundError(f"File not found: {file_path}")
 
-    if not os.path.exists(file_path):
-        raise FileNotFoundError(
-            f"File not found: {file_path}"
-        )
-
-    print(f"📄 Loading PDF: {file_path}")
-
-    loader = PyPDFLoader(file_path)
-
-    pages = loader.load()
-
-    print(f"✅ Loaded {len(pages)} pages")
-
+    pages = PyPDFLoader(str(path)).load()
+    print(f"Loaded {len(pages)} pages from {path.name}")
     return split_documents(pages)
 
 
 def load_and_split_docx(file_path: str):
+    path = Path(file_path)
+    if not path.exists():
+        raise FileNotFoundError(f"File not found: {file_path}")
 
-    if not os.path.exists(file_path):
-        raise FileNotFoundError(
-            f"File not found: {file_path}"
-        )
+    doc = Document(str(path))
+    text = "\n".join(para.text for para in doc.paragraphs if para.text.strip())
 
-    print(f"📄 Loading DOCX: {file_path}")
-
-    doc = Document(file_path)
-
-    text = "\n".join(
-        para.text
-        for para in doc.paragraphs
-    )
-
-    docs = [
+    documents = [
         LangchainDocument(
             page_content=text,
-            metadata={
-                "source": file_path
-            }
+            metadata={"source": path.name},
         )
     ]
 
-    return split_documents(docs)
+    return split_documents(documents)
 
 
 def load_and_split_text(file_path: str):
+    path = Path(file_path)
+    if not path.exists():
+        raise FileNotFoundError(f"File not found: {file_path}")
 
-    if not os.path.exists(file_path):
-        raise FileNotFoundError(
-            f"File not found: {file_path}"
-        )
+    text = path.read_text(encoding="utf-8")
 
-    print(f"📄 Loading Text File: {file_path}")
-
-    with open(
-        file_path,
-        "r",
-        encoding="utf-8"
-    ) as f:
-
-        text = f.read()
-
-    docs = [
+    documents = [
         LangchainDocument(
             page_content=text,
-            metadata={
-                "source": file_path
-            }
+            metadata={"source": path.name},
         )
     ]
 
-    return split_documents(docs)
+    return split_documents(documents)
 
 
 def load_document(file_path: str):
+    """Load and chunk a supported document type."""
 
-    extension = os.path.splitext(
-        file_path
-    )[1].lower()
+    extension = Path(file_path).suffix.lower()
 
     if extension == ".pdf":
-        return load_and_split_pdf(
-            file_path
-        )
+        return load_and_split_pdf(file_path)
+    if extension == ".docx":
+        return load_and_split_docx(file_path)
+    if extension in {".txt", ".md"}:
+        return load_and_split_text(file_path)
 
-    elif extension == ".docx":
-        return load_and_split_docx(
-            file_path
-        )
-
-    elif extension in [
-        ".txt",
-        ".md"
-    ]:
-        return load_and_split_text(
-            file_path
-        )
-
-    else:
-        raise ValueError(
-            f"Unsupported file type: {extension}"
-        )
+    raise ValueError(f"Unsupported file type: {extension}")
 
 
 def get_document_info(chunks: list):
+    """Return basic stats shown in the UI after indexing."""
 
-    total_chars = sum(
-        len(chunk.page_content)
-        for chunk in chunks
-    )
+    if not chunks:
+        return {
+            "total_chunks": 0,
+            "total_characters": 0,
+            "avg_chunk_size": 0,
+            "pages": 0,
+            "source": "unknown",
+        }
 
-    pages = max(
-        (
-            chunk.metadata.get("page", 0)
-            for chunk in chunks
-        ),
-        default=0
-    ) + 1
+    total_chars = sum(len(chunk.page_content) for chunk in chunks)
+    pages = max((chunk.metadata.get("page", 0) for chunk in chunks), default=0) + 1
+    source = chunks[0].metadata.get("source", "unknown")
 
     return {
         "total_chunks": len(chunks),
         "total_characters": total_chars,
-        "avg_chunk_size":
-            total_chars // len(chunks)
-            if chunks else 0,
-        "pages": pages
+        "avg_chunk_size": total_chars // len(chunks),
+        "pages": pages,
+        "source": source,
     }

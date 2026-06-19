@@ -1,0 +1,67 @@
+DocuQuery Sample Document
+=========================
+
+Project Title: Retrieval-Augmented Generation for Document Question Answering
+
+Author: Dharun M
+Department: Computer Science and Engineering
+Institution: Final Year Project Demo
+Date: March 2026
+
+Abstract
+--------
+This document is a sample input for the DocuQuery application. The system lets users
+upload structured text documents and ask natural-language questions. Relevant passages
+are retrieved from a vector database and passed to a large language model for answer
+generation.
+
+Problem Statement
+-----------------
+Reading long PDFs such as research papers, resumes, and project reports takes time.
+Students and reviewers often need quick answers to specific questions like "What
+methodology was used?" or "List the key skills mentioned." A RAG pipeline reduces
+hallucination by grounding responses in retrieved source text.
+
+System Architecture
+-------------------
+1. Document ingestion: PDF, DOCX, TXT, and Markdown files are parsed into text.
+2. Chunking: Text is split into overlapping segments for better retrieval coverage.
+3. Embedding: Each chunk is converted into a vector using sentence-transformers.
+4. Storage: Embeddings are stored in ChromaDB for similarity search.
+5. Retrieval: User questions are embedded and matched against top document chunks.
+6. Generation: Retrieved context and the question are sent to Google Gemini.
+
+Technologies Used
+-----------------
+- Python 3.11
+- Streamlit for the web interface
+- LangChain for orchestration
+- ChromaDB as the vector store
+- HuggingFace all-MiniLM-L6-v2 embeddings
+- Google Gemini for answer generation
+
+Implementation Details
+----------------------
+Chunk size is set to 1000 characters with 200 characters overlap. Maximum Marginal
+Relevance (MMR) retrieval is used to reduce duplicate chunks in the context window.
+The prompt instructs the model to answer only from provided context.
+
+Evaluation Notes
+----------------
+During testing, the system performed well on resumes and technical reports with clear
+section headings. Scanned PDFs without selectable text were harder to parse and often
+produced incomplete answers. Future work includes OCR support and multi-document chat.
+
+Sample Questions for Demo
+-------------------------
+- What is the project title?
+- Which embedding model is used?
+- What chunk size was chosen and why?
+- What are the limitations mentioned in the document?
+- List the technologies used in this project.
+
+Conclusion
+----------
+DocuQuery demonstrates a practical RAG workflow suitable for academic and professional
+documents. The project focuses on explainability by showing retrieved source chunks
+alongside generated answers.

@@ -1,192 +1,215 @@
-import os
 import streamlit as st
 
-from src.document_loader import (
-    load_document,
-    get_document_info
+from config import (
+    ALLOWED_EXTENSIONS,
+    GOOGLE_API_KEY,
+    MAX_FILE_SIZE_MB,
+    SAMPLE_DOCS_DIR,
+    SUPPORTED_TYPES,
+    UPLOAD_DIR,
 )
-from src.vector_store import create_vector_store
-from src.retriever import get_retriever
+from src.document_loader import get_document_info, load_document
 from src.llm_chain import create_qa_chain
-
-MAX_FILE_SIZE_MB = 10
+from src.retriever import get_retriever
+from src.vector_store import create_vector_store
 
 st.set_page_config(
-    page_title="RAG Chatbot",
-    page_icon="📄"
+    page_title="DocuQuery | RAG Chatbot",
+    page_icon="📄",
+    layout="wide",
+    initial_sidebar_state="expanded",
 )
 
-# Session State
 if "messages" not in st.session_state:
     st.session_state.messages = []
 
 if "document_processed" not in st.session_state:
     st.session_state.document_processed = False
 
-st.title("📄 RAG Chatbot")
+if "document_name" not in st.session_state:
+    st.session_state.document_name = None
 
-st.markdown(
-    "Upload a document and ask questions about its contents."
-)
 
-# Sidebar
-with st.sidebar:
+def reset_chat():
+    st.session_state.messages = []
 
-    st.header("About")
 
-    st.markdown("""
-This application allows users to upload documents
-and ask questions based on the document content.
+def process_document(file_path: str, display_name: str):
+    reset_chat()
 
-### Supported Formats
-- PDF
-- DOCX
-- TXT
-- Markdown
+    with st.spinner("Reading document and building the search index..."):
+        chunks = load_document(file_path)
+        create_vector_store(chunks)
+        info = get_document_info(chunks)
 
-### Tech Stack
-- LangChain
-- ChromaDB
-- Hugging Face Embeddings
-- Google Gemini
-- Streamlit
-""")
+    st.session_state.document_processed = True
+    st.session_state.document_name = display_name
+    return info
 
-    st.divider()
 
-    if st.button("Clear Chat"):
-        st.session_state.messages = []
-        st.rerun()
+def render_sidebar():
+    with st.sidebar:
+        st.title("DocuQuery")
+        st.caption("RAG-based document Q&A system")
+        st.markdown("---")
 
-# Upload Section
-uploaded_file = st.file_uploader(
-    "Upload a document",
-    type=["pdf", "docx", "txt", "md"]
-)
-
-if uploaded_file:
-
-    file_size_mb = uploaded_file.size / (1024 * 1024)
-
-    if file_size_mb > MAX_FILE_SIZE_MB:
-        st.error(
-            f"File size exceeds {MAX_FILE_SIZE_MB} MB limit."
-        )
-        st.stop()
-
-    os.makedirs("uploads", exist_ok=True)
-
-    file_path = os.path.join(
-        "uploads",
-        uploaded_file.name
-    )
-
-    with open(file_path, "wb") as f:
-        f.write(uploaded_file.getbuffer())
-
-    st.info(
-        f"Uploaded: {uploaded_file.name} "
-        f"({file_size_mb:.2f} MB)"
-    )
-
-    if st.button("Process Document"):
-
-        st.session_state.messages = []
-
-        with st.spinner("Processing document..."):
-
-            chunks = load_document(file_path)
-
-            create_vector_store(chunks)
-
-            info = get_document_info(chunks)
-
-        st.session_state.document_processed = True
-
-        st.success("Document processed successfully!")
-
-        st.write("## Document Statistics")
-
-        st.metric("Pages", info["pages"])
-        st.metric("Chunks", info["total_chunks"])
-        st.metric("Characters", info["total_characters"])
-        st.metric(
-            "Average Chunk Size",
-            info["avg_chunk_size"]
+        st.subheader("1. Upload")
+        uploaded_file = st.file_uploader(
+            "Choose a document",
+            type=SUPPORTED_TYPES,
+            help=f"Supported formats: {', '.join(SUPPORTED_TYPES)}. Max {MAX_FILE_SIZE_MB} MB.",
         )
 
-# Display Previous Messages
-for msg in st.session_state.messages:
+        if uploaded_file is not None:
+            file_size_mb = uploaded_file.size / (1024 * 1024)
+            st.caption(f"{uploaded_file.name} ({file_size_mb:.2f} MB)")
 
-    with st.chat_message(msg["role"]):
-        st.write(msg["content"])
+            if file_size_mb > MAX_FILE_SIZE_MB:
+                st.error(f"File exceeds the {MAX_FILE_SIZE_MB} MB limit.")
+            elif st.button("Index document", use_container_width=True):
+                UPLOAD_DIR.mkdir(parents=True, exist_ok=True)
+                file_path = UPLOAD_DIR / uploaded_file.name
+                file_path.write_bytes(uploaded_file.getbuffer())
 
-# Chat Input
-question = st.chat_input(
-    "Ask a question about the document..."
-)
+                try:
+                    info = process_document(str(file_path), uploaded_file.name)
+                    st.success("Document indexed successfully.")
+                    st.metric("Chunks", info["total_chunks"])
+                    st.metric("Pages", info["pages"])
+                except Exception as exc:
+                    st.session_state.document_processed = False
+                    st.error(f"Indexing failed: {exc}")
 
-if question:
+        st.markdown("---")
+        st.subheader("2. Try a sample")
+
+        SAMPLE_DOCS_DIR.mkdir(parents=True, exist_ok=True)
+        sample_files = sorted(SAMPLE_DOCS_DIR.glob("*"))
+        sample_files = [
+            path
+            for path in sample_files
+            if path.suffix.lower() in ALLOWED_EXTENSIONS
+        ]
+
+        if sample_files:
+            sample_choice = st.selectbox(
+                "Sample documents",
+                options=[path.name for path in sample_files],
+            )
+            if st.button("Load sample", use_container_width=True):
+                sample_path = SAMPLE_DOCS_DIR / sample_choice
+                try:
+                    info = process_document(str(sample_path), sample_choice)
+                    st.success(f"Loaded {sample_choice}")
+                    st.metric("Chunks", info["total_chunks"])
+                except Exception as exc:
+                    st.error(f"Could not load sample: {exc}")
+        else:
+            st.caption("Add files under data/samples/ to enable quick demos.")
+
+        st.markdown("---")
+
+        if st.session_state.document_processed:
+            st.info(f"Active document: **{st.session_state.document_name}**")
+        else:
+            st.warning("No document indexed yet.")
+
+        if not GOOGLE_API_KEY:
+            st.error("GOOGLE_API_KEY is not set. Add it to `.env` before asking questions.")
+
+        if st.button("Clear chat", use_container_width=True):
+            reset_chat()
+            st.rerun()
+
+        st.markdown("---")
+        st.markdown(
+            """
+            **Stack used**
+            - Streamlit (UI)
+            - LangChain (pipeline)
+            - ChromaDB (vector store)
+            - HuggingFace MiniLM (embeddings)
+            - Google Gemini (answers)
+            """
+        )
+
+
+def render_chat():
+    st.title("Document Q&A Assistant")
+    st.write(
+        "Upload a PDF, DOCX, TXT, or Markdown file, index it, then ask questions "
+        "about the content. Answers are grounded in retrieved document chunks."
+    )
 
     if not st.session_state.document_processed:
-        st.warning(
-            "Please upload and process a document first."
-        )
-        st.stop()
+        st.info("Start by uploading a document or loading a sample from the sidebar.")
+        return
 
-    st.session_state.messages.append(
-        {
-            "role": "user",
-            "content": question
-        }
-    )
+    for message in st.session_state.messages:
+        with st.chat_message(message["role"]):
+            st.markdown(message["content"])
+            if message["role"] == "assistant" and message.get("sources"):
+                with st.expander("View source chunks"):
+                    for index, source in enumerate(message["sources"], start=1):
+                        st.markdown(f"**Chunk {index}**")
+                        st.write(source["content"])
+                        if source.get("metadata"):
+                            st.caption(str(source["metadata"]))
+
+    question = st.chat_input("Ask something about the uploaded document...")
+
+    if not question:
+        return
+
+    if not GOOGLE_API_KEY:
+        st.error("Set GOOGLE_API_KEY in your environment before chatting.")
+        return
+
+    st.session_state.messages.append({"role": "user", "content": question})
 
     with st.chat_message("user"):
-        st.write(question)
+        st.markdown(question)
 
-    retriever = get_retriever()
+    with st.chat_message("assistant"):
+        with st.spinner("Searching document and generating answer..."):
+            try:
+                retriever = get_retriever()
+                qa_chain = create_qa_chain(retriever)
+                response = qa_chain.invoke({"query": question})
+                answer = response["result"]
+                sources = []
 
-    qa_chain = create_qa_chain(retriever)
+                for doc in response.get("source_documents", []):
+                    sources.append(
+                        {
+                            "content": doc.page_content,
+                            "metadata": getattr(doc, "metadata", {}),
+                        }
+                    )
 
-    with st.spinner("Generating response..."):
+                st.markdown(answer)
 
-        response = qa_chain.invoke(
-            {"query": question}
-        )
+                if sources:
+                    with st.expander("View source chunks"):
+                        for index, source in enumerate(sources, start=1):
+                            st.markdown(f"**Chunk {index}**")
+                            st.write(source["content"])
+                            if source.get("metadata"):
+                                st.caption(str(source["metadata"]))
 
-    answer = response["result"]
+            except Exception as exc:
+                answer = f"Something went wrong: {exc}"
+                sources = []
+                st.error(answer)
 
     st.session_state.messages.append(
         {
             "role": "assistant",
-            "content": answer
+            "content": answer,
+            "sources": sources,
         }
     )
 
-    with st.chat_message("assistant"):
-        st.write(answer)
 
-    if "source_documents" in response:
-
-        st.write("## Source References")
-
-        for i, doc in enumerate(
-            response["source_documents"],
-            start=1
-        ):
-
-            with st.expander(
-                f"Source Chunk {i}"
-            ):
-
-                st.write(
-                    doc.page_content
-                )
-
-                if hasattr(
-                    doc,
-                    "metadata"
-                ):
-                    st.caption(
-                        f"Metadata: {doc.metadata}"
-                    )
+render_sidebar()
+render_chat()
