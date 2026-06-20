@@ -270,24 +270,24 @@ if question:
     )
 
     with st.chat_message("user"):
-
         st.markdown(question)
 
     try:
 
-        with st.spinner(
-            "Thinking..."
-        ):
+        with st.spinner("Thinking..."):
 
-            result = ask_document(
-                question
-            )
+            result = ask_document(question)
 
             answer = result.answer
 
     except Exception as e:
 
-        answer = f"Error: {e}"
+        import traceback
+
+        answer = (
+            f"Error:\n\n"
+            f"{traceback.format_exc()}"
+        )
 
     st.session_state.messages.append(
         {
@@ -296,8 +296,5 @@ if question:
         }
     )
 
-    with st.chat_message(
-        "assistant"
-    ):
-
+    with st.chat_message("assistant"):
         st.markdown(answer)
