@@ -1,10 +1,22 @@
 # src/vector_store.py
 
-from langchain_chroma import Chroma
+import os
+import shutil
 
+from langchain_chroma import Chroma
 from src.embeddings import load_embedding_model
 
 VECTOR_DB_PATH = "vector_db"
+
+
+def clear_vector_store():
+    """
+    Remove existing vector database.
+    """
+
+    if os.path.exists(VECTOR_DB_PATH):
+        shutil.rmtree(VECTOR_DB_PATH)
+        print("🗑️ Old vector store removed")
 
 
 def create_vector_store(chunks):
@@ -32,7 +44,7 @@ def create_vector_store(chunks):
 
 def load_vector_store():
     """
-    Load an existing vector database.
+    Load existing vector database.
     """
 
     embeddings = load_embedding_model()

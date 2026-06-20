@@ -13,38 +13,73 @@ MAX_FILE_SIZE_MB = 10
 
 st.set_page_config(
     page_title="RAG Chatbot",
-    page_icon="📄"
+    page_icon="📄",
+    layout="wide"
 )
 
+# ----------------------------
 # Session State
+# ----------------------------
+
 if "messages" not in st.session_state:
     st.session_state.messages = []
 
 if "document_processed" not in st.session_state:
     st.session_state.document_processed = False
 
-st.title("📄 RAG Chatbot")
 
-st.markdown(
-    "Upload a document and ask questions about its contents."
+# ----------------------------
+# Header
+# ----------------------------
+
+st.title("RAG Chatbot 🤖")
+
+st.caption(
+    "Document Analysis Assistant powered by Retrieval-Augmented Generation (RAG)"
 )
 
+st.info(
+    """
+    🚧 Current Project Scope
+
+    This version is optimized for:
+
+    • Research Papers  
+    • Resumes  
+    • Academic Documents  
+    • Technical Documentation  
+    • Reports
+
+    Best performance is achieved with structured text-based documents.
+    """
+)
+
+# ----------------------------
 # Sidebar
+# ----------------------------
+
 with st.sidebar:
 
-    st.header("About")
+    st.header("Project Scope")
 
     st.markdown("""
-This application allows users to upload documents
-and ask questions based on the document content.
+### Supported Documents
 
-### Supported Formats
 - PDF
 - DOCX
 - TXT
 - Markdown
 
+### Features
+
+- Semantic Search
+- Vector Database Retrieval
+- Source References
+- Gemini-Powered Answers
+- Document Statistics
+
 ### Tech Stack
+
 - LangChain
 - ChromaDB
 - Hugging Face Embeddings
@@ -54,11 +89,15 @@ and ask questions based on the document content.
 
     st.divider()
 
-    if st.button("Clear Chat"):
+    if st.button("🗑️ Clear Chat"):
         st.session_state.messages = []
         st.rerun()
 
-# Upload Section
+
+# ----------------------------
+# File Upload
+# ----------------------------
+
 uploaded_file = st.file_uploader(
     "Upload a document",
     type=["pdf", "docx", "txt", "md"]
@@ -84,12 +123,12 @@ if uploaded_file:
     with open(file_path, "wb") as f:
         f.write(uploaded_file.getbuffer())
 
-    st.info(
-        f"Uploaded: {uploaded_file.name} "
+    st.success(
+        f"📂 {uploaded_file.name} "
         f"({file_size_mb:.2f} MB)"
     )
 
-    if st.button("Process Document"):
+    if st.button("🚀 Process Document"):
 
         st.session_state.messages = []
 
@@ -103,35 +142,65 @@ if uploaded_file:
 
         st.session_state.document_processed = True
 
-        st.success("Document processed successfully!")
-
-        st.write("## Document Statistics")
-
-        st.metric("Pages", info["pages"])
-        st.metric("Chunks", info["total_chunks"])
-        st.metric("Characters", info["total_characters"])
-        st.metric(
-            "Average Chunk Size",
-            info["avg_chunk_size"]
+        st.success(
+            "✅ Document processed successfully!"
         )
 
-# Display Previous Messages
+        st.write("## 📊 Document Statistics")
+
+        col1, col2, col3, col4 = st.columns(4)
+
+        with col1:
+            st.metric(
+                "Pages",
+                info["pages"]
+            )
+
+        with col2:
+            st.metric(
+                "Chunks",
+                info["total_chunks"]
+            )
+
+        with col3:
+            st.metric(
+                "Characters",
+                info["total_characters"]
+            )
+
+        with col4:
+            st.metric(
+                "Avg Chunk Size",
+                info["avg_chunk_size"]
+            )
+
+
+# ----------------------------
+# Chat History
+# ----------------------------
+
 for msg in st.session_state.messages:
 
     with st.chat_message(msg["role"]):
         st.write(msg["content"])
 
-# Chat Input
+
+# ----------------------------
+# User Input
+# ----------------------------
+
 question = st.chat_input(
-    "Ask a question about the document..."
+    "Ask about skills, experience, summary, findings, conclusions..."
 )
 
 if question:
 
     if not st.session_state.document_processed:
+
         st.warning(
             "Please upload and process a document first."
         )
+
         st.stop()
 
     st.session_state.messages.append(
@@ -168,7 +237,7 @@ if question:
 
     if "source_documents" in response:
 
-        st.write("## Source References")
+        st.write("## 📚 Source References")
 
         for i, doc in enumerate(
             response["source_documents"],
@@ -176,7 +245,7 @@ if question:
         ):
 
             with st.expander(
-                f"Source Chunk {i}"
+                f"📄 Source Chunk {i}"
             ):
 
                 st.write(
