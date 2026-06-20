@@ -2,7 +2,7 @@
 
 **Retrieval-Augmented Generation (RAG) chatbot for grounded document Q&A**
 
-Final-year CSE project — upload PDFs, resumes, or reports and ask questions with
+RAG project — upload PDFs, resumes, or reports and ask questions with
 source-backed answers powered by vector search + Google Gemini.
 
 [![CI](https://github.com/Dharunmd/rag-document-chatbot/actions/workflows/ci.yml/badge.svg)](https://github.com/Dharunmd/rag-document-chatbot/actions/workflows/ci.yml)
