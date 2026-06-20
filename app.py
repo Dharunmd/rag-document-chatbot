@@ -37,7 +37,6 @@ UPLOAD_DIR.mkdir(
 # Lazy Load Pipeline
 # ----------------------------
 
-@st.cache_resource
 def load_pipeline():
     from src.pipeline import (
         ask_document,
