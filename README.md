@@ -6,8 +6,8 @@ RAG project — upload PDFs, resumes, or reports and ask questions with
 source-backed answers powered by vector search + Google Gemini.
 
 [![CI](https://github.com/Dharunmd/rag-document-chatbot/actions/workflows/ci.yml/badge.svg)](https://github.com/Dharunmd/rag-document-chatbot/actions/workflows/ci.yml)
-**Live demo:** _Deploy on [Streamlit Cloud](https://share.streamlit.io) and paste URL here_
-
+**Live demo:** _Deploy on [Streamlit Cloud](https://share.streamlit.io[) and paste URL here_
+](https://rag-document-chatbot-6t9bpuumgoektqfsmjx4zd.streamlit.app)
 **Repository:** https://github.com/Dharunmd/rag-document-chatbot
 
 ---
