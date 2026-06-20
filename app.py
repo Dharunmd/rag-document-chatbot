@@ -9,16 +9,54 @@ from config import (
     UPLOAD_DIR,
 )
 
-from src.pipeline import (
-    ask_document,
-    index_document,
-)
+# ----------------------------
+# Page Config
+# ----------------------------
 
 st.set_page_config(
     page_title=APP_NAME,
     page_icon="📄",
-    layout="wide"
+    layout="wide",
 )
+
+# ----------------------------
+# Startup Check
+# ----------------------------
+
+st.title("📄 Document RAG Chatbot")
+
+st.success("Application started successfully")
+
+# Create upload directory
+UPLOAD_DIR.mkdir(
+    parents=True,
+    exist_ok=True
+)
+
+# ----------------------------
+# Lazy Load Pipeline
+# ----------------------------
+
+@st.cache_resource
+def load_pipeline():
+    from src.pipeline import (
+        ask_document,
+        index_document,
+    )
+
+    return ask_document, index_document
+
+
+try:
+    ask_document, index_document = load_pipeline()
+
+except Exception as e:
+
+    st.error(
+        f"Pipeline failed to load:\n{e}"
+    )
+
+    st.stop()
 
 # ----------------------------
 # Session State
@@ -36,7 +74,6 @@ if "document_name" not in st.session_state:
 if "document_stats" not in st.session_state:
     st.session_state.document_stats = None
 
-
 # ----------------------------
 # Helper Functions
 # ----------------------------
@@ -45,8 +82,10 @@ def clear_chat():
     st.session_state.messages = []
 
 
-def process_document(file_path, file_name):
-
+def process_document(
+    file_path,
+    file_name,
+):
     result = index_document(file_path)
 
     st.session_state.document_processed = True
@@ -55,7 +94,6 @@ def process_document(file_path, file_name):
 
     return result
 
-
 # ----------------------------
 # Sidebar
 # ----------------------------
@@ -63,6 +101,7 @@ def process_document(file_path, file_name):
 with st.sidebar:
 
     st.title(APP_NAME)
+
     st.caption(APP_TAGLINE)
 
     st.divider()
@@ -74,7 +113,10 @@ with st.sidebar:
 
     if uploaded_file:
 
-        file_size_mb = uploaded_file.size / (1024 * 1024)
+        file_size_mb = (
+            uploaded_file.size
+            / (1024 * 1024)
+        )
 
         st.caption(
             f"{uploaded_file.name} "
@@ -90,13 +132,8 @@ with st.sidebar:
 
         elif st.button(
             "Process Document",
-            use_container_width=True
+            use_container_width=True,
         ):
-
-            UPLOAD_DIR.mkdir(
-                parents=True,
-                exist_ok=True
-            )
 
             file_path = (
                 UPLOAD_DIR
@@ -110,12 +147,12 @@ with st.sidebar:
             try:
 
                 with st.spinner(
-                    "Processing..."
+                    "Indexing document..."
                 ):
 
                     result = process_document(
                         str(file_path),
-                        uploaded_file.name
+                        uploaded_file.name,
                     )
 
                 st.success(
@@ -126,7 +163,7 @@ with st.sidebar:
             except Exception as e:
 
                 st.error(
-                    f"Error: {e}"
+                    f"Indexing failed:\n{e}"
                 )
 
     st.divider()
@@ -134,23 +171,20 @@ with st.sidebar:
     if not GROQ_API_KEY:
 
         st.error(
-            "GROQ_API_KEY missing in .env"
+            "GROQ_API_KEY is missing"
         )
 
     if st.button(
         "Clear Chat",
-        use_container_width=True
+        use_container_width=True,
     ):
 
         clear_chat()
         st.rerun()
 
-
 # ----------------------------
-# Main Page
+# Main Content
 # ----------------------------
-
-st.title("📄 Document RAG Chatbot")
 
 st.markdown(
     """
@@ -167,7 +201,7 @@ LangChain • ChromaDB • HuggingFace • Groq
 )
 
 # ----------------------------
-# Document Stats
+# Stats
 # ----------------------------
 
 if st.session_state.document_stats:
@@ -188,7 +222,7 @@ if st.session_state.document_stats:
 
     c3.metric(
         "Characters",
-        stats["total_characters"]
+        f"{stats['total_characters']:,}"
     )
 
     c4.metric(
@@ -200,14 +234,14 @@ if st.session_state.document_stats:
 # Chat History
 # ----------------------------
 
-for msg in st.session_state.messages:
+for message in st.session_state.messages:
 
     with st.chat_message(
-        msg["role"]
+        message["role"]
     ):
 
         st.markdown(
-            msg["content"]
+            message["content"]
         )
 
 # ----------------------------
@@ -231,7 +265,7 @@ if question:
     st.session_state.messages.append(
         {
             "role": "user",
-            "content": question
+            "content": question,
         }
     )
 
@@ -249,7 +283,7 @@ if question:
                 question
             )
 
-        answer = result.answer
+            answer = result.answer
 
     except Exception as e:
 
@@ -258,7 +292,7 @@ if question:
     st.session_state.messages.append(
         {
             "role": "assistant",
-            "content": answer
+            "content": answer,
         }
     )
 
