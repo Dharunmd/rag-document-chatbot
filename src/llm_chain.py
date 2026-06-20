@@ -1,19 +1,23 @@
 from langchain.chains import RetrievalQA
 from langchain.prompts import PromptTemplate
-from langchain_google_genai import ChatGoogleGenerativeAI
+from langchain_groq import ChatGroq
 
-from config import GOOGLE_API_KEY, LLM_MODEL, LLM_TEMPERATURE
-
+from config import (
+    GROQ_API_KEY,
+    LLM_MODEL,
+    LLM_TEMPERATURE
+)
 
 PROMPT_TEMPLATE = """
-You are a document Q&A assistant for a college project demo.
+You are a document Q&A assistant.
 
 Rules:
-- Answer only from the context below.
+- Answer only using the provided context.
 - Keep answers concise and factual.
-- If the context does not contain the answer, say:
+- If the answer is not found in the context, say:
   "I couldn't find that in the uploaded document."
-- Do not invent names, dates, or numbers.
+- Do not make up information.
+- Do not use outside knowledge.
 
 Context:
 {context}
@@ -26,28 +30,34 @@ Answer:
 
 
 def create_qa_chain(retriever):
-    """Create a retrieval-augmented QA chain backed by Gemini."""
 
-    if not GOOGLE_API_KEY:
+    if not GROQ_API_KEY:
         raise ValueError(
-            "GOOGLE_API_KEY is missing. Add it to your .env file before chatting."
+            "GROQ_API_KEY is missing in .env"
         )
 
-    llm = ChatGoogleGenerativeAI(
+    llm = ChatGroq(
+        api_key=GROQ_API_KEY,
         model=LLM_MODEL,
         temperature=LLM_TEMPERATURE,
-        google_api_key=GOOGLE_API_KEY,
     )
 
     prompt = PromptTemplate(
-        input_variables=["context", "question"],
         template=PROMPT_TEMPLATE,
+        input_variables=[
+            "context",
+            "question"
+        ]
     )
 
-    return RetrievalQA.from_chain_type(
+    qa_chain = RetrievalQA.from_chain_type(
         llm=llm,
         retriever=retriever,
         chain_type="stuff",
         return_source_documents=True,
-        chain_type_kwargs={"prompt": prompt},
+        chain_type_kwargs={
+            "prompt": prompt
+        }
     )
+
+    return qa_chain
