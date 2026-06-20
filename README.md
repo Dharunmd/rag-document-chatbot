@@ -135,7 +135,7 @@ Copy-paste and tweak:
 
 ## Author
 
-**Dharun M** · Computer Science & Engineering · [GitHub](https://github.com/Dharunmd)
+**Dharun M** · [GitHub](https://github.com/Dharunmd)
 
 ## License
 
