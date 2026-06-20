@@ -10,9 +10,7 @@ langchain-text-splitters==0.3.11
 
 chromadb==1.0.15
 
-sentence-transformers==5.0.0
-transformers==4.53.3
-torch==2.7.1
+sentence-transformers
 
 pypdf==5.9.0
 python-docx==1.2.0
