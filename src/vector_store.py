@@ -8,6 +8,9 @@ from src.embeddings import load_embedding_model
 
 def clear_vector_store():
     """Remove the persisted Chroma index before indexing a new document."""
+    import chromadb
+
+    chromadb.api.client.SharedSystemClient.clear_system_cache()
 
     if VECTOR_DB_PATH.exists():
         shutil.rmtree(VECTOR_DB_PATH)
