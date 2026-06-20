@@ -8,17 +8,22 @@ from langchain_text_splitters import RecursiveCharacterTextSplitter
 from config import CHUNK_OVERLAP, CHUNK_SIZE
 
 
-def split_documents(documents):
-    """Split loaded pages into overlapping chunks for retrieval."""
+def split_documents(documents, source_name: str):
+    """Split loaded pages into overlapping chunks with traceable metadata."""
 
     text_splitter = RecursiveCharacterTextSplitter(
         chunk_size=CHUNK_SIZE,
         chunk_overlap=CHUNK_OVERLAP,
         length_function=len,
-        separators=["\n\n", "\n", " ", ""],
+        separators=["\n\n", "\n", ". ", " ", ""],
     )
 
     chunks = text_splitter.split_documents(documents)
+
+    for index, chunk in enumerate(chunks):
+        chunk.metadata.setdefault("source", source_name)
+        chunk.metadata["chunk_id"] = index + 1
+
     print(f"Split document into {len(chunks)} chunks")
     return chunks
 
@@ -29,8 +34,11 @@ def load_and_split_pdf(file_path: str):
         raise FileNotFoundError(f"File not found: {file_path}")
 
     pages = PyPDFLoader(str(path)).load()
+    for page in pages:
+        page.metadata["source"] = path.name
+
     print(f"Loaded {len(pages)} pages from {path.name}")
-    return split_documents(pages)
+    return split_documents(pages, path.name)
 
 
 def load_and_split_docx(file_path: str):
@@ -48,7 +56,7 @@ def load_and_split_docx(file_path: str):
         )
     ]
 
-    return split_documents(documents)
+    return split_documents(documents, path.name)
 
 
 def load_and_split_text(file_path: str):
@@ -65,7 +73,7 @@ def load_and_split_text(file_path: str):
         )
     ]
 
-    return split_documents(documents)
+    return split_documents(documents, path.name)
 
 
 def load_document(file_path: str):

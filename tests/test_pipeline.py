@@ -1,6 +1,9 @@
 """Basic checks for the RAG pipeline modules."""
 
+import os
 from pathlib import Path
+
+import pytest
 
 from config import SAMPLE_DOCS_DIR
 
@@ -20,8 +23,13 @@ def test_document_loader_splits_text():
     assert len(chunks) > 0
     assert info["total_chunks"] == len(chunks)
     assert info["total_characters"] > 0
+    assert chunks[0].metadata.get("chunk_id") == 1
 
 
+@pytest.mark.skipif(
+    os.getenv("RUN_SLOW_TESTS") != "1",
+    reason="Embedding model download is slow; set RUN_SLOW_TESTS=1 to run",
+)
 def test_embedding_model_loads():
     from src.embeddings import load_embedding_model
 
