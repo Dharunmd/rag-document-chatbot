@@ -16,7 +16,6 @@
 
 ![RAG Chatbot Demo](docs/screenshot.png)
 
-![screenshot placeholder](docs/screenshot-main.png)
 
 ---
 
