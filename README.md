@@ -14,8 +14,6 @@
 
 ### 🎬 See it in action
 
-[▶ Watch Demo Video]<img src="docs/demo.gif" width="700">
-
 ![RAG Chatbot Demo](docs/screenshot.png)
 
 ![screenshot placeholder](docs/screenshot-main.png)
