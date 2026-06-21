@@ -13,7 +13,7 @@
 ---
 ## 🎬 See it in Action
 
-![RAG Chatbot Demo](docs/screenshot.png)
+![RAG Chatbot Demo](docs/screenshot-main.png)
 
 Upload a PDF, ask questions, and receive answers grounded in the document with source citations.
 
