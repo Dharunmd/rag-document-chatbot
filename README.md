@@ -11,11 +11,11 @@
 **[🚀 Try the live demo](https://rag-document-chatbot-mtkgf2ug7veksbd8mcsf2s.streamlit.app)** · **[⭐ Star this repo](#)** if it's useful to you — it helps others discover it too.
 
 ---
-
-### 🎬 See it in action
+## 🎬 See it in Action
 
 ![RAG Chatbot Demo](docs/screenshot.png)
 
+Upload a PDF, ask questions, and receive answers grounded in the document with source citations.
 
 ---
 
