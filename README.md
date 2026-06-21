@@ -15,7 +15,7 @@
 ### 🎬 See it in action
 
 > _Suggested: 10–15s GIF here showing: upload a PDF → ask a question → answer appears with highlighted source chunk._
-> `<img src="docs/demo.gif" width="700">`
+> `<img src="docs/rag_chatbot.mp4" width="700">`
 
 ![screenshot placeholder](docs/screenshot-main.png)
 
